@@ -38,24 +38,32 @@ public class TFTPClient {
             TFTPPacket packet = null;
             SocketAddress serverAdress = null;
             
-            int packetCounter = 0, dataSize = 512;
-            byte[] buffer = new byte[512];
+            int packetCounter = 0;
             boolean communicationEnd = false;
             boolean transmitAgain = false, receiveAgain = false;
             
-            while(!communicationEnd) {
+            while(true) {
             	if (!transmitAgain && !receiveAgain) {
             		if (packetCounter == 0) {
             			packet = new RRQPacket(filename.replace('\0', ' '));
             		} else {
-            			packet = new ACKPacket(packetCounter+1);
+            			packet = new ACKPacket(packetCounter);
             		}
             	}
             	
             	envoi.setData(packet.generate());
             	log("OUT " + packet);
+
+            	if (communicationEnd) {
+            	    try {
+            	        socket.receive(req);
+                    } catch (SocketTimeoutException e) {
+            	        break; // Le programme peut quitter
+                    }
+                } else {
+                    receiveNTimes(socket, req, TIMEOUT_RETRY_COUNT);
+                }
             	
-            	receiveNTimes(socket, req, TIMEOUT_RETRY_COUNT);
             	packet = TFTPPacket.parse(req);
             	log("IN " + packet);
             	
@@ -80,7 +88,7 @@ public class TFTPClient {
             	if (data.getNumber() == (packetCounter + 1)) {
             		++packetCounter;
             		file.write(data.getData());
-            		if (dataSize < 512) {
+            		if (data.getLength() < 512) {
             			communicationEnd = true;
             		}
             	} else if (data.getNumber() == packetCounter) {
@@ -90,7 +98,7 @@ public class TFTPClient {
                 }
             }
             file.close();
-    	} catch (UnknownHostException e) { // Serveur inconnu
+        } catch (UnknownHostException e) { // Serveur inconnu
             returnCode = -1;
             log(e);
         } catch (SocketException e) { // Impossible de créer la socket
@@ -121,7 +129,7 @@ public class TFTPClient {
             }
             log(e);
         }
-    	return returnCode;
+        return returnCode;
     }
 
     public static int sendFile(String host, int port, String filename) {
@@ -193,8 +201,8 @@ public class TFTPClient {
                 } else {
                     throw new BadResponseException("Mauvais numéro ACK");
                 }
-
             }
+            file.close();
         } catch (UnknownHostException e) { // Serveur inconnu
             returnCode = -1;
             log(e);

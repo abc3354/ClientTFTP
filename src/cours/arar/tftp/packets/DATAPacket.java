@@ -24,6 +24,10 @@ public class DATAPacket extends TFTPPacket {
         return data;
     }
 
+    public int getLength() {
+        return length;
+    }
+
     @Override
     public byte[] generate() throws PackageGenerationException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
