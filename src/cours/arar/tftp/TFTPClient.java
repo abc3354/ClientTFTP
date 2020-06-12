@@ -89,7 +89,7 @@ public class TFTPClient {
             	transmitAgain = false;
             	if (data.getNumber() == (packetCounter + 1)) {
             		++packetCounter;
-            		file.write(data.getData());
+            		file.write(data.getData(), 0, data.getLength());
             		if (data.getLength() < 512) {
             			communicationEnd = true;
             		}
