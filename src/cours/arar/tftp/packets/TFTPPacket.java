@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.nio.charset.StandardCharsets;
 
 public abstract class TFTPPacket {
     protected int code;
@@ -28,13 +29,19 @@ public abstract class TFTPPacket {
             }
             switch (stream.read() & 0xFF) {
                 case ACK:
-                    int ackNumber = stream.readShort() & 0xFF;
+                    int ackNumber = stream.readShort() & 0xFFFF;
                     return new ACKPacket(ackNumber);
                 case DATA:
-                	int dataNumber = stream.readShort() & 0xFF;
+                	int dataNumber = stream.readShort() & 0xFFFF;
                     byte[] buffer = new byte[512];
                     int length = stream.read(buffer, 0, udpPacket.getLength() - 4);
                 	return new DATAPacket(dataNumber, buffer, length);
+                case ERROR:
+                    int errorCode = stream.readShort() & 0xFFFF;
+                    byte[] messageBuffer = new byte[udpPacket.getLength() - 5];
+                    stream.read(messageBuffer);
+                    String message = new String(messageBuffer, StandardCharsets.US_ASCII);
+                    return new ERRORPacket(errorCode, message);
                 default:
                     throw new PackageParsingException("Code inconnu");
             }

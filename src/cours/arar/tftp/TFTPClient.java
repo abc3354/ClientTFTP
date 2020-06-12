@@ -26,7 +26,7 @@ public class TFTPClient {
     public static int receiveFile(String host, int port, String filename) {
     	int returnCode = 0;
     	try {
-    		FileOutputStream file = new FileOutputStream(filename);
+    		FileOutputStream file = null;
     		
     		InetAddress address = InetAddress.getByName(host);
     		DatagramSocket socket = new DatagramSocket();
@@ -88,6 +88,9 @@ public class TFTPClient {
             	
             	transmitAgain = false;
             	if (data.getNumber() == (packetCounter + 1)) {
+            	    if (packetCounter == 0) { // Pour ne pas créer de fichier vide si le fichier n'existe pas sur le serveur
+                        file = new FileOutputStream(filename);
+                    }
             		++packetCounter;
             		file.write(data.getData(), 0, data.getLength());
             		if (data.getLength() < 512) {
