@@ -49,13 +49,15 @@ public class TFTPClient {
             		} else {
             			packet = new ACKPacket(packetCounter);
             		}
+            		envoi.setData(packet.generate());
             	}
             	
-            	envoi.setData(packet.generate());
+            	socket.send(envoi);
             	log("OUT " + packet);
 
             	if (communicationEnd) {
             	    try {
+            	        log("Attente d'une erreur de transmission");
             	        socket.receive(req);
                     } catch (SocketTimeoutException e) {
             	        break; // Le programme peut quitter

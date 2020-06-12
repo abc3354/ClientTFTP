@@ -19,8 +19,8 @@ public class AppUser {
             System.out.println("Pas de serveur. Veuillez utiliser la commande connect.");
             return;
         }
-        System.out.println("AppUser.get");
-        System.out.println("filename = " + filename);
+        int code = TFTPClient.receiveFile(host, port, filename);
+        analyseCode(code);
     }
 
     private static void put(String filename) {
@@ -117,7 +117,7 @@ public class AppUser {
         }
         switch (code) {
             case 0:
-                System.out.println("Fichier envoyé");
+                System.out.println("Transfert réussi");
                 break;
             case -1:
                 System.out.println("Adresse du serveur incorrecte");

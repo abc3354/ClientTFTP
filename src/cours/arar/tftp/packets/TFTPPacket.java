@@ -33,7 +33,7 @@ public abstract class TFTPPacket {
                 case DATA:
                 	int dataNumber = stream.readShort() & 0xFF;
                     byte[] buffer = new byte[512];
-                    int length = stream.read(buffer);
+                    int length = stream.read(buffer, 0, udpPacket.getLength() - 4);
                 	return new DATAPacket(dataNumber, buffer, length);
                 default:
                     throw new PackageParsingException("Code inconnu");
