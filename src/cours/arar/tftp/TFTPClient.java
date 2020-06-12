@@ -3,6 +3,7 @@ package cours.arar.tftp;
 import cours.arar.tftp.packets.*;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.*;
@@ -20,6 +21,107 @@ public class TFTPClient {
 
     public static boolean getVerbosity() {
         return verbosity;
+    }
+    
+    public static int receiveFile(String host, int port, String filename) {
+    	int returnCode = 0;
+    	try {
+    		FileOutputStream file = new FileOutputStream(filename);
+    		
+    		InetAddress address = InetAddress.getByName(host);
+    		DatagramSocket socket = new DatagramSocket();
+            DatagramPacket envoi = new DatagramPacket(new byte[516], 516, address, port);
+            DatagramPacket req = new DatagramPacket(new byte[516], 516);
+            
+            socket.setSoTimeout(TIMEOUT_DELAY * 1000);
+
+            TFTPPacket packet = null;
+            SocketAddress serverAdress = null;
+            
+            int packetCounter = 0, dataSize = 512;
+            byte[] buffer = new byte[512];
+            boolean communicationEnd = false;
+            boolean transmitAgain = false, receiveAgain = false;
+            
+            while(!communicationEnd) {
+            	if (!transmitAgain && !receiveAgain) {
+            		if (packetCounter == 0) {
+            			packet = new RRQPacket(filename.replace('\0', ' '));
+            		} else {
+            			packet = new ACKPacket(packetCounter+1);
+            		}
+            	}
+            	
+            	envoi.setData(packet.generate());
+            	log("OUT " + packet);
+            	
+            	receiveNTimes(socket, req, TIMEOUT_RETRY_COUNT);
+            	packet = TFTPPacket.parse(req);
+            	log("IN " + packet);
+            	
+            	checkPacket(packet, DataPacket.class);
+                DataPacket data = (DataPacket)packet;
+            	
+            	if (packetCounter == 0) {
+            		serverAdress = req.getSocketAddress();
+            		envoi.setSocketAddress(serverAdress);
+            	} else if (!req.getSocketAddress().equals(serverAdress) ) {
+                    packet = new ERRORPacket(5, "Unknown transfer ID");
+                    envoi.setData(packet.generate());
+                    envoi.setSocketAddress(req.getSocketAddress()); // On renvoie le paquet d'erreur au bon serveur
+                    receiveAgain = true;
+                    continue; // On ne veut pas interpréter le paquet
+                } else {
+                	envoi.setSocketAddress(serverAdress);
+                	receiveAgain = false;
+                }
+            	
+            	transmitAgain = false;
+            	if (data.getNumber() == (packetCounter + 1)) {
+            		++packetCounter;
+            		file.write(req.getData());
+            		if (dataSize < 512) {
+            			communicationEnd = true;
+            		}
+            	} else if (data.getNumber() == packetCounter) {
+            		transmitAgain = true;
+            	} else {
+                    throw new BadResponseException("Mauvais numéro ACK");
+                }
+            }
+            file.close();
+    	} catch (UnknownHostException e) { // Serveur inconnu
+            returnCode = -1;
+            log(e);
+        } catch (SocketException e) { // Impossible de créer la socket
+            returnCode = -2;
+            log(e);
+        } catch (PackageGenerationException e) {
+            returnCode = -3;
+            log(e);
+        } catch (FileNotFoundException e) {
+            returnCode = -4;
+            log(e);
+        } catch (SocketTimeoutException e) {
+            returnCode = -5;
+            log(e);
+        } catch (IOException e) { // socket.send || socket.receive
+            returnCode = -6;
+            log(e);
+        } catch (PackageParsingException e) {
+            returnCode = -7;
+            log(e);
+        } catch (BadResponseException e) {
+            returnCode = -8;
+            log(e);
+        } catch (TFTPErrorException e) {
+            returnCode = e.getCode();
+            if (e.getCode() == 0) {
+                returnCode = 8; // on ne peut pas renvoyer 0
+            }
+            log(e);
+        }
+    	return returnCode;
     }
 
     public static int sendFile(String host, int port, String filename) {
