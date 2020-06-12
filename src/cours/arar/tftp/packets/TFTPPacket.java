@@ -28,12 +28,13 @@ public abstract class TFTPPacket {
             }
             switch (stream.read() & 0xFF) {
                 case ACK:
-                    int ackNumber = stream.readShort();
+                    int ackNumber = stream.readShort() & 0xFF;
                     return new ACKPacket(ackNumber);
                 case DATA:
-                	int dataNumber = stream.readInt();
-                	dataNumber = dataNumber & 0xFFFF;
-                	return new DataPacket(dataNumber);
+                	int dataNumber = stream.readShort() & 0xFF;
+                    byte[] buffer = new byte[512];
+                    int length = stream.read(buffer);
+                	return new DATAPacket(dataNumber, buffer, length);
                 default:
                     throw new PackageParsingException("Code inconnu");
             }

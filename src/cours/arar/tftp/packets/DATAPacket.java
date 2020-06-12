@@ -1,7 +1,4 @@
-package cours.arar.tftp;
-
-import cours.arar.tftp.packets.PackageGenerationException;
-import cours.arar.tftp.packets.TFTPPacket;
+package cours.arar.tftp.packets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -17,6 +14,14 @@ public class DATAPacket extends TFTPPacket {
         this.number = number;
         this.data = data;
         this.length = length;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 
     @Override

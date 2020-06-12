@@ -59,8 +59,8 @@ public class TFTPClient {
             	packet = TFTPPacket.parse(req);
             	log("IN " + packet);
             	
-            	checkPacket(packet, DataPacket.class);
-                DataPacket data = (DataPacket)packet;
+            	checkPacket(packet, DATAPacket.class);
+                DATAPacket data = (DATAPacket) packet;
             	
             	if (packetCounter == 0) {
             		serverAdress = req.getSocketAddress();
@@ -79,7 +79,7 @@ public class TFTPClient {
             	transmitAgain = false;
             	if (data.getNumber() == (packetCounter + 1)) {
             		++packetCounter;
-            		file.write(req.getData());
+            		file.write(data.getData());
             		if (dataSize < 512) {
             			communicationEnd = true;
             		}
